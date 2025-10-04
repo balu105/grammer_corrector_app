@@ -5,7 +5,8 @@ import language_tool_python
 app = Flask(__name__)
 
 # Initialize LanguageTool for grammar correction
-tool = language_tool_python.LanguageTool('en-US')
+tool = language_tool_python.LanguageTool('en-US', remote_server='https://api.languagetoolplus.com/v2')
+
 
 @app.route("/")
 def index():
