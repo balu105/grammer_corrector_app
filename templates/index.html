@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Voice Grammar Corrector</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      font-family: 'Poppins', sans-serif;
+      color: #f0f0f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      user-select: none;
+    }
+    .container {
+      background: #1a1a2e;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      max-width: 450px;
+      width: 100%;
+      padding: 35px 30px;
+      text-align: center;
+    }
+    h2 {
+      font-weight: 600;
+      font-size: 2.25rem;
+      margin-bottom: 25px;
+      color: #f3f4f6;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      text-shadow: 0 0 8px #9b59b6;
+    }
+    button {
+      background: linear-gradient(90deg, #6a11cb, #2575fc);
+      border: none;
+      padding: 14px 30px;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: white;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 8px 15px rgba(101, 90, 255, 0.45);
+      margin: 15px 0 30px 0;
+      transition: all 0.3s ease;
+      width: 100%;
+      letter-spacing: 0.05em;
+    }
+    button:hover:not(:disabled) {
+      background: linear-gradient(90deg, #2575fc, #6a11cb);
+      box-shadow: 0 12px 24px rgba(38, 125, 252, 0.7);
+      transform: translateY(-3px);
+    }
+    button:disabled {
+      background: #565676;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    p {
+      font-size: 1.125rem;
+      line-height: 1.6;
+      margin: 12px 0;
+      background: #2f2f4a;
+      padding: 14px 20px;
+      border-radius: 12px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+      min-height: 48px;
+      color: #d1d1e9;
+      user-select: text;
+    }
+    b {
+      color: #9b59b6;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .footer {
+      margin-top: 15px;
+      font-size: 0.875rem;
+      color: #aaaac3;
+      user-select: none;
+    }
+    @media (max-width: 500px) {
+      .container {
+        padding: 25px 20px;
+      }
+      button {
+        font-size: 1rem;
+      }
+      h2 {
+        font-size: 1.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Voice Grammar Corrector</h2>
+    <button id="start-btn">Start Speaking</button>
+    <p><b>Original:</b> <span id="original-text"></span></p>
+    <p><b>Corrected:</b> <span id="corrected-text"></span></p>
+    <button id="play-corrected" disabled>Play Corrected Text</button>
+    <div class="footer">© 2025 Personal Grammar Tool</div>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('start-btn');
+    const originalTextSpan = document.getElementById('original-text');
+    const correctedTextSpan = document.getElementById('corrected-text');
+    const playBtn = document.getElementById('play-corrected');
+
+    let recognition;
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+    } else if ('SpeechRecognition' in window) {
+      recognition = new SpeechRecognition();
+    } else {
+      alert("Your browser doesn't support Speech Recognition");
+    }
+
+    if (recognition) {
+      recognition.continuous = false;
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = async (event) => {
+        const transcript = event.results[0][0].transcript;
+        originalTextSpan.textContent = transcript;
+        correctedTextSpan.textContent = 'Checking...';
+
+        try {
+          const response = await fetch('/api/correct-grammar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: transcript })
+          });
+          const data = await response.json();
+          correctedTextSpan.textContent = data.correctedText;
+
+          playBtn.disabled = false;
+        } catch (error) {
+          correctedTextSpan.textContent = 'Error correcting text';
+          console.error(error);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error', event);
+        correctedTextSpan.textContent = 'Error recognizing speech';
+      };
+
+      startBtn.onclick = () => {
+        correctedTextSpan.textContent = '';
+        originalTextSpan.textContent = '';
+        playBtn.disabled = true;
+        recognition.start();
+      };
+    }
+
+    playBtn.onclick = () => {
+      const text = correctedTextSpan.textContent;
+      if (!text) return;
+      const utterance = new SpeechSynthesisUtterance(text);
+      speechSynthesis.speak(utterance);
+    };
+  </script>
+</body>
+</html>
